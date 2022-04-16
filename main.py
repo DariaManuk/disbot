@@ -20,6 +20,8 @@ def echo(update, context):
         return stop(update, context)
     elif now == 'menu':
         return menu(update, context)
+    elif now == 'rating':
+        return rating(update, context)
 
 
 def start(update, context):
