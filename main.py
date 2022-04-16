@@ -4,9 +4,12 @@ from telegram import ReplyKeyboardMarkup
 from data import db_session
 from data.users import User
 from data.results import Results
+from data.cities import city
 
-now = ''
 db_session.global_init("db/bot.db")
+db_sess = db_session.create_session()
+now = ''
+now_for_game = ''
 
 
 def echo(update, context):
@@ -22,11 +25,12 @@ def echo(update, context):
         return menu(update, context)
     elif now == 'rating':
         return rating(update, context)
+    elif 'cities' in now:
+        return cities(update, context)
 
 
 def start(update, context):
-    global now
-    db_sess = db_session.create_session()
+    global now, db_sess
     a = [i.id_tg for i in db_sess.query(User).all()]
     if update.message.from_user.id not in a:
         user = User()
@@ -40,16 +44,16 @@ def start(update, context):
     if now == '':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
-        update.message.reply_text(f'''Я бот с играми.\n
-    Если хотите посмотреть меню нажмите - /menu\n
+        update.message.reply_text(f'''Я бот с играми. 
+    Если хотите посмотреть меню нажмите - /menu 
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
         now = 'start'
     elif now == 'start':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
-        update.message.reply_text(f'''Бот уже активирован\n
-    Если хотите посмотреть меню нажмите - /menu\n
+        update.message.reply_text(f'''Бот уже активирован 
+    Если хотите посмотреть меню нажмите - /menu 
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
     else:
@@ -63,7 +67,7 @@ def stop(update, context):
         reply_keyboard = [['/start']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(
-            f'''Бот выключен. Спасибо за игру.\n
+            f'''Бот выключен. Спасибо за игру. 
     Чтобы заново активировать бота нажмите - /start''',
             reply_markup=markup)
         now = ''
@@ -71,26 +75,27 @@ def stop(update, context):
         reply_keyboard = [['/start']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(
-            f'''Бот уже выключен.\n
+            f'''Бот выключен. 
     Чтобы активировать бота нажмите - /start''',
             reply_markup=markup)
 
 
 def end_play(update, context):
-    global now
-    if now in ['xo', 'maze', 'cities']:
+    global now, now_for_game
+    if 'xo' in now or 'maze' in now or 'cities' in now:
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
-        update.message.reply_text(f'''Игра досрочно завершена. Результаты не занесены в рейтинг.\n
-    Если хотите посмотреть меню нажмите - /menu\n
+        update.message.reply_text(f'''Игра досрочно завершена. Результаты не занесены в рейтинг. 
+    Если хотите посмотреть меню нажмите - /menu 
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
         now = 'e_p'
+        now_for_game = ''
     elif now == 'e_p':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
-        update.message.reply_text(f'''Игра уже завершена.\n
-    Если хотите посмотреть меню нажмите - /menu\n
+        update.message.reply_text(f'''Игра уже завершена. 
+    Если хотите посмотреть меню нажмите - /menu 
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
     else:
@@ -103,13 +108,13 @@ def menu(update, context):
     if now in ['menu', 'start', 'e_p', 'rating']:
         reply_keyboard = [['/cities', '/maze', '/xo'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
-        update.message.reply_text(f'''Выберите игру:\n
-    города - /cities\n
-    крестики-нолики - /xo\n
-    лабиринт - /maze\n
+        update.message.reply_text(f'''Выберите игру: 
+    города - /cities 
+    крестики-нолики - /xo 
+    лабиринт - /maze 
     
-    Посмотреть рейтинг - /rating\n
-    Выключить бота - /stop\n''',
+    Посмотреть рейтинг - /rating 
+    Выключить бота - /stop ''',
                                   reply_markup=markup)
         now = 'menu'
     else:
@@ -117,17 +122,81 @@ def menu(update, context):
         echo(update, context)
 
 
+def xo(update, context):
+    global now
+    pass
+
+
+def cities(update, context):
+    global now, now_for_game
+    if now in ['menu', 'start', 'e_p', 'rating']:
+        reply_keyboard = [['да'], ['нет']]
+        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+        update.message.reply_text(f'''В этой игре вам нужно угадать город по фотографии со спутника. 
+Чтобы ответ засчитался, нужно вбивать название русскими буквами.
+Если захотите досрочно окончить игру нажмите - /end_play
+    Вы хотите начать игру?''', reply_markup=markup)
+        now = 'cities'
+    elif now == 'cities 1':
+        spisok = city()
+        context.bot.send_photo(chat_id=update.message.chat_id, photo=spisok[0])
+        reply_keyboard = [['/end_play']]
+        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+        update.message.reply_text(f'''Какой это город?''', reply_markup=markup)
+        now_for_game = spisok[1]
+        now = 'cities 2'
+    elif now == 'cities 2':
+        if update.message.text == now_for_game:
+            reply_keyboard = [['/end_play']]
+            markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+            update.message.reply_text(f'''Верно. Идём дальше.''', reply_markup=markup)
+            user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
+            db_sess.query(Results).filter(Results.user_id == user.id).update(
+                {'cities': Results.cities + 1})
+            db_sess.commit()
+            now = 'cities 1'
+            return cities(update, context)
+        else:
+            reply_keyboard = [['/end_play']]
+            markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+            update.message.reply_text(f'''Неверно. Идём дальше.''', reply_markup=markup)
+            now = 'cities 1'
+            return cities(update, context)
+    else:
+        update.message.reply_text(f'''В данный момент нельзя открыть меню.''')
+        return echo(update, context)
+
+
+def maze(update, context):
+    pass
+
+
 def rating(update, context):
     pass
 
 
 def text(update, context):
+    global now
+    if now == 'cities':
+        if 'yes' in update.message.text \
+                or 'ok' in update.message.text \
+                or 'yes' in update.message.text \
+                or 'да' in update.message.text \
+                or 'хорошо' in update.message.text:
+            now = 'cities 1'
+            return cities(update, context)
+        elif 'не' in update.message.text \
+                or 'no' in update.message.text:
+            now = 'menu'
+            return menu(update, context)
+    if now in ['cities 1', 'cities 2']:
+        return cities(update, context)
     update.message.reply_text('Извините, я вас не понимаю.')
     echo(update, context)
 
 
 def main():
-    updater = Updater('5104954005:AWF-n0oIGM7ZqHprL8B-O4szvpjMVhx6yo', use_context=True)
+    updater = Updater('5104954005:AAFW-n0oIGM7ZqHprL8B-O4szvpjMVhx6yo', use_context=True)
     dp = updater.dispatcher
     text_handler = MessageHandler(Filters.text, text)
     dp.add_handler(CommandHandler("start", start))
@@ -135,6 +204,9 @@ def main():
     dp.add_handler(CommandHandler("end_play", end_play))
     dp.add_handler(CommandHandler("menu", menu))
     dp.add_handler(CommandHandler("rating", rating))
+    dp.add_handler(CommandHandler("xo", xo))
+    dp.add_handler(CommandHandler("cities", cities))
+    dp.add_handler(CommandHandler("maze", maze))
     dp.add_handler(text_handler)
     updater.start_polling()
     updater.idle()
