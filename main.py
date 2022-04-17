@@ -23,10 +23,10 @@ def echo(update, context):
         return stop(update, context)
     elif now == 'menu':
         return menu(update, context)
-    elif now == 'rating':
-        return rating(update, context)
     elif 'cities' in now:
         return cities(update, context)
+    elif 'rating' in now:
+        return rating(update, context)
 
 
 def start(update, context):
@@ -62,7 +62,7 @@ def start(update, context):
 
 
 def stop(update, context):
-    global now
+    global now, now_for_game
     if now != '':
         reply_keyboard = [['/start']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -71,6 +71,7 @@ def stop(update, context):
     Чтобы заново активировать бота нажмите - /start''',
             reply_markup=markup)
         now = ''
+        now_for_game = ''
     else:
         reply_keyboard = [['/start']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -105,7 +106,7 @@ def end_play(update, context):
 
 def menu(update, context):
     global now
-    if now in ['menu', 'start', 'e_p', 'rating']:
+    if now in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now:
         reply_keyboard = [['/cities', '/maze', '/xo'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Выберите игру: 
@@ -129,7 +130,7 @@ def xo(update, context):
 
 def cities(update, context):
     global now, now_for_game
-    if now in ['menu', 'start', 'e_p', 'rating']:
+    if now in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now:
         reply_keyboard = [['да'], ['нет']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''В этой игре вам нужно угадать город по фотографии со спутника. 
@@ -152,7 +153,7 @@ def cities(update, context):
             update.message.reply_text(f'''Верно. Идём дальше.''', reply_markup=markup)
             user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
             db_sess.query(Results).filter(Results.user_id == user.id).update(
-                {'cities': Results.cities + 1})
+                {'cities': Results.cities + 1, 'all': Results.all + 1})
             db_sess.commit()
             now = 'cities 1'
             return cities(update, context)
@@ -172,7 +173,82 @@ def maze(update, context):
 
 
 def rating(update, context):
-    pass
+    global now, now_for_game
+    if now in ['start', 'menu', 'e_p', 'rating']:
+        reply_keyboard = [['maze', 'xo'], ['cities', 'all'], ['/menu']]
+        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+        update.message.reply_text(
+            f'''Какой рейтинг вы хотите посомтреть?
+    лабиринт - maze
+    города - cities
+    крестики-нолики - xo
+    общий - all
+Вернуться в меню - /menu''',
+            reply_markup=markup)
+        now = 'rating'
+    elif now == 'rating all':
+        stroka = 'Общий рейтинг:\n'
+        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.all))[:5]:
+            stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.all}\n'
+        stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
+        user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
+        stroka += f'Ваш рейтинг:\t{user.username}\t' + \
+                  f'{db_sess.query(Results).filter(Results.user_id == user.id).first().all}'
+        stroka += '\nВернуться в меню - /menu'
+        reply_keyboard = [['/menu']]
+        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+        update.message.reply_text(stroka,
+                                  reply_markup=markup)
+        now = 'rating'
+    elif now == 'rating xo':
+        stroka = 'Рейтинг по игре крестики-нолики:\n'
+        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.xo))[:5]:
+            stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.xo}\n'
+        stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
+        user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
+        stroka += f'Ваш рейтинг:\t{user.username}\t' + \
+                  f'{db_sess.query(Results).filter(Results.user_id == user.id).first().xo}'
+        stroka += '\nВернуться в меню - /menu'
+        reply_keyboard = [['/menu']]
+        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+        update.message.reply_text(stroka,
+                                  reply_markup=markup)
+        now = 'rating'
+    elif now == 'rating maze':
+        stroka = 'Рейтинг по игре крестики-нолики:\n'
+        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.maze))[:5]:
+            stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.maze}\n'
+        stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
+        user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
+        stroka += f'Ваш рейтинг:\t{user.username}\t' + \
+                  f'{db_sess.query(Results).filter(Results.user_id == user.id).first().maze}'
+        stroka += '\nВернуться в меню - /menu'
+        reply_keyboard = [['/menu']]
+        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+        update.message.reply_text(stroka,
+                                  reply_markup=markup)
+        now = 'rating'
+    elif now == 'rating cities':
+        stroka = 'Рейтинг по игре города:\n'
+        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.cities))[:5]:
+            stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.cities}\n'
+        stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
+        user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
+        stroka += f'Ваш рейтинг:\t{user.username}\t' + \
+                  f'{db_sess.query(Results).filter(Results.user_id == user.id).first().cities}'
+        stroka += '\nВернуться в меню - /menu'
+        reply_keyboard = [['/menu']]
+        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+        update.message.reply_text(stroka,
+                                  reply_markup=markup)
+        now = 'rating'
+    else:
+        reply_keyboard = []
+        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
+        update.message.reply_text(
+            f'''Сейчас нельзя посмотреть рейтинг.''',
+            reply_markup=markup)
+        echo(update, context)
 
 
 def text(update, context):
@@ -189,6 +265,19 @@ def text(update, context):
                 or 'no' in update.message.text:
             now = 'menu'
             return menu(update, context)
+    if now == 'rating':
+        if 'maze' in update.message.text:
+            now = 'rating maze'
+            return rating(update, context)
+        elif 'xo' in update.message.text:
+            now = 'rating xo'
+            return rating(update, context)
+        elif 'all' in update.message.text:
+            now = 'rating all'
+            return rating(update, context)
+        elif 'cities' in update.message.text:
+            now = 'rating cities'
+            return rating(update, context)
     if now in ['cities 1', 'cities 2']:
         return cities(update, context)
     update.message.reply_text('Извините, я вас не понимаю.')
