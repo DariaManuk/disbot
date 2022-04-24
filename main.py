@@ -169,7 +169,7 @@ def cities(update, context):
 
 
 def maze(update, context):
-    pass
+    update.message.reply_text(f'''В данный момент лабиринт не доступен.''')
 
 
 def rating(update, context):
