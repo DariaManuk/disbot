@@ -43,8 +43,9 @@ def start(update, context):
         user = User()
         user.id_tg = update.message.from_user.id
         user.username = update.message.from_user.username
+        if user.username is None:
+            user.username = str(update.message.from_user.id)
         db_sess.add(user)
-        db_sess.commit()
         result = Results(user=user)
         db_sess.add(result)
         db_sess.commit()
