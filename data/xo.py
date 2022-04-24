@@ -2,6 +2,20 @@ import random
 from PIL import Image, ImageDraw
 
 
+# проверка выиграна ли партия
+def is_win(matrics):
+    for i in range(3):
+        if matrics[i][0] == matrics[i][1] == matrics[i][2] != 0:
+            return True
+        if matrics[0][i] == matrics[1][i] == matrics[2][i] != 0:
+            return True
+    if matrics[0][0] == matrics[1][1] == matrics[2][2] != 0:
+        return True
+    elif matrics[0][2] == matrics[1][1] == matrics[2][0] != 0:
+        return True
+    return False
+
+
 # передается матрица поля ох( где 2-х, а 1-о ) для создания визуального представления поля
 def table_xo(matrics):
     im = Image.new("RGB", (408, 408))
@@ -18,7 +32,7 @@ def table_xo(matrics):
     drawer.rectangle(((254, 50), (258, 358)), fill='white')
     drawer.rectangle(((50, 150), (358, 154)), fill='white')
     drawer.rectangle(((50, 254), (358, 258)), fill='white')
-    return im
+    im.save('data/im.png')
 
 
 def has_a_wining_move(bo, le):
