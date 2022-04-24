@@ -1,9 +1,7 @@
-from io import BytesIO
 import requests
-from PIL import Image
 from random import choice
 
-
+# фото со спутника заданного адреса
 def new_place(place):
     toponym_to_find = place
     geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
@@ -32,7 +30,7 @@ def new_place(place):
     response = requests.get(map_api_server, params=map_params)
     return response.url
 
-
+# рандомный выбор города для игры
 def city():
     spisok = [['Крассная площадь', 'Москва'], ['авеню Пьер Лоти, 12, VII округ Парижа, Париж, Франция', 'Париж'],
               ['Санкт-Петербург Дворцовая площадь', 'Санкт-Петербург'], ['Колизей Италия', 'Рим'],
@@ -45,6 +43,7 @@ def city():
     return [new_place(k[0]), k[1]]
 
 
+# подбор коэффициента увеличения карт
 def coords(x, y):
     c = 0
     d = 0

@@ -6,12 +6,14 @@ from data.users import User
 from data.results import Results
 from data.cities import city
 
+# подключение к базе данных, определение "флагов"
 db_session.global_init("db/bot.db")
 db_sess = db_session.create_session()
 now = ''
 now_for_game = ''
 
 
+# функция для переадрессации на нужную
 def echo(update, context):
     global now
     update.message.reply_text(f'Ответьте пожалуйста на сообщение.')
@@ -29,10 +31,13 @@ def echo(update, context):
         return rating(update, context)
 
 
+# команда /start
 def start(update, context):
     global now, db_sess
+    # проверка, есть ли уже пользователь в базе данных
     a = [i.id_tg for i in db_sess.query(User).all()]
     if update.message.from_user.id not in a:
+        # если нет, добавляем
         user = User()
         user.id_tg = update.message.from_user.id
         user.username = update.message.from_user.username
@@ -41,6 +46,7 @@ def start(update, context):
         result = Results(user=user)
         db_sess.add(result)
         db_sess.commit()
+    # когда бот ещё не активирован
     if now == '':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -49,6 +55,7 @@ def start(update, context):
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
         now = 'start'
+    # если бот уже включен, но коменд ещё не было
     elif now == 'start':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -56,13 +63,16 @@ def start(update, context):
     Если хотите посмотреть меню нажмите - /menu 
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
+    # команда активирована, когда пользователь уже использует бота
     else:
         update.message.reply_text(f'''Бот уже активирован.''')
         echo(update, context)
 
 
+# команда выключения бота
 def stop(update, context):
     global now, now_for_game
+    # если бота можно выключить
     if now != '':
         reply_keyboard = [['/start']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -72,6 +82,7 @@ def stop(update, context):
             reply_markup=markup)
         now = ''
         now_for_game = ''
+    # если он уже выключен
     else:
         reply_keyboard = [['/start']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -81,8 +92,10 @@ def stop(update, context):
             reply_markup=markup)
 
 
+# закончить игру
 def end_play(update, context):
     global now, now_for_game
+    # если игра активирована
     if 'xo' in now or 'maze' in now or 'cities' in now:
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -92,6 +105,7 @@ def end_play(update, context):
                                   reply_markup=markup)
         now = 'e_p'
         now_for_game = ''
+    # если игры закончены, но команд больше не было
     elif now == 'e_p':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -99,13 +113,16 @@ def end_play(update, context):
     Если хотите посмотреть меню нажмите - /menu 
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
+    # если игра не включена
     else:
         update.message.reply_text(f'''Вы ещё не начали играть.''')
         echo(update, context)
 
 
+# меню
 def menu(update, context):
     global now
+    # если можно открыть меню
     if now in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now:
         reply_keyboard = [['/cities', '/maze', '/xo'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -118,18 +135,22 @@ def menu(update, context):
     Выключить бота - /stop ''',
                                   reply_markup=markup)
         now = 'menu'
+    # если нельзя
     else:
         update.message.reply_text(f'''В данный момент нельзя открыть меню.''')
         echo(update, context)
 
 
+# игра крестики-нолики
 def xo(update, context):
     global now
     pass
 
 
+# игра в города
 def cities(update, context):
     global now, now_for_game
+    # когда возможно запустить игру
     if now in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now:
         reply_keyboard = [['да'], ['нет']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -138,6 +159,7 @@ def cities(update, context):
 Если захотите досрочно окончить игру нажмите - /end_play
     Вы хотите начать игру?''', reply_markup=markup)
         now = 'cities'
+    # прислать пользователю изображение города со спутника
     elif now == 'cities 1':
         spisok = city()
         context.bot.send_photo(chat_id=update.message.chat_id, photo=spisok[0])
@@ -146,6 +168,7 @@ def cities(update, context):
         update.message.reply_text(f'''Какой это город?''', reply_markup=markup)
         now_for_game = spisok[1]
         now = 'cities 2'
+    # проверка верности ответа
     elif now == 'cities 2':
         if update.message.text == now_for_game:
             reply_keyboard = [['/end_play']]
@@ -163,15 +186,18 @@ def cities(update, context):
             update.message.reply_text(f'''Неверно. Идём дальше.''', reply_markup=markup)
             now = 'cities 1'
             return cities(update, context)
+    # если игру нельзя сейчас включить
     else:
         update.message.reply_text(f'''В данный момент нельзя открыть меню.''')
         return echo(update, context)
 
 
+# лабиринт
 def maze(update, context):
     update.message.reply_text(f'''В данный момент лабиринт не доступен.''')
 
 
+# рейтинг
 def rating(update, context):
     global now, now_for_game
     if now in ['start', 'menu', 'e_p', 'rating']:
@@ -186,6 +212,7 @@ def rating(update, context):
 Вернуться в меню - /menu''',
             reply_markup=markup)
         now = 'rating'
+    # общий рейтинг
     elif now == 'rating all':
         stroka = 'Общий рейтинг:\n'
         for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.all))[:5]:
@@ -200,6 +227,7 @@ def rating(update, context):
         update.message.reply_text(stroka,
                                   reply_markup=markup)
         now = 'rating'
+    # Рейтинг по игре крестики-нолики
     elif now == 'rating xo':
         stroka = 'Рейтинг по игре крестики-нолики:\n'
         for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.xo))[:5]:
@@ -214,8 +242,9 @@ def rating(update, context):
         update.message.reply_text(stroka,
                                   reply_markup=markup)
         now = 'rating'
+    # Рейтинг по лабиринту
     elif now == 'rating maze':
-        stroka = 'Рейтинг по игре крестики-нолики:\n'
+        stroka = 'Рейтинг по лабиринту:\n'
         for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.maze))[:5]:
             stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.maze}\n'
         stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
@@ -228,6 +257,7 @@ def rating(update, context):
         update.message.reply_text(stroka,
                                   reply_markup=markup)
         now = 'rating'
+    # Рейтинг по игре города
     elif now == 'rating cities':
         stroka = 'Рейтинг по игре города:\n'
         for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.cities))[:5]:
@@ -242,6 +272,7 @@ def rating(update, context):
         update.message.reply_text(stroka,
                                   reply_markup=markup)
         now = 'rating'
+    # если нельзя посмотреть сейчас рейтинг
     else:
         reply_keyboard = []
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
@@ -251,9 +282,12 @@ def rating(update, context):
         echo(update, context)
 
 
+# обработка текстовых сообщений
 def text(update, context):
     global now
+    # обработка в игре города
     if now == 'cities':
+        # хочет ли пользователь начать игру
         if 'yes' in update.message.text \
                 or 'ok' in update.message.text \
                 or 'yes' in update.message.text \
@@ -265,6 +299,7 @@ def text(update, context):
                 or 'no' in update.message.text:
             now = 'menu'
             return menu(update, context)
+    # обработка в рейтинг, какой конкретно показать
     if now == 'rating':
         if 'maze' in update.message.text:
             now = 'rating maze'
@@ -278,12 +313,15 @@ def text(update, context):
         elif 'cities' in update.message.text:
             now = 'rating cities'
             return rating(update, context)
+    # обработка в игре города, проверка ответа
     if now in ['cities 1', 'cities 2']:
         return cities(update, context)
+    # если пользователь написал что-то не предусмотренное
     update.message.reply_text('Извините, я вас не понимаю.')
     echo(update, context)
 
 
+# запуск бота
 def main():
     updater = Updater('5104954005:AAFW-n0oIGM7ZqHprL8B-O4szvpjMVhx6yo', use_context=True)
     dp = updater.dispatcher

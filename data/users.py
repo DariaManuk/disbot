@@ -3,6 +3,7 @@ from data.db_session import SqlAlchemyBase
 from sqlalchemy import orm
 
 
+# модель базы данных для пользователей
 class User(SqlAlchemyBase):
     __tablename__ = 'users'
     id = sqlalchemy.Column(sqlalchemy.Integer,

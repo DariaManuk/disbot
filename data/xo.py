@@ -2,7 +2,7 @@ import random
 from PIL import Image, ImageDraw
 
 
-# передается матрица поля ох( где 2-х, а 1-о )
+# передается матрица поля ох( где 2-х, а 1-о ) для создания визуального представления поля
 def table_xo(matrics):
     im = Image.new("RGB", (408, 408))
     drawer = ImageDraw.Draw(im)
@@ -98,11 +98,3 @@ def TicTacToeAI(board, letter):  # help me pls Dasha is forcing me to do this i 
         return random.choice(possible)  # рандомный край го бррррррррррррррррррр
     else:
         return None  # если ничего не получилось возвращаем None но в таких случаях либо я либо Даша затупили
-
-
-board1 = [[0, 0, 2],
-          [2, 2, 1],
-          [0, 0, 1]]
-a = TicTacToeAI(board1, 2)
-board1[a[0]][a[1]] = 2
-table_xo(board1).show()
