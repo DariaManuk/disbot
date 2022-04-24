@@ -6,6 +6,7 @@ from data.users import User
 from data.results import Results
 from data.cities import city
 from data.xo import table_xo, TicTacToeAI, is_win
+from os import remove
 
 # подключение к базе данных, определение "флагов"
 db_session.global_init("db/bot.db")
@@ -161,6 +162,7 @@ def xo(update, context):
     elif now == 'xo 1':
         table_xo(now_for_game[0])
         context.bot.send_photo(chat_id=update.message.chat_id, photo=open('data/im.png', 'rb'))
+        remove('data/im.png')
         reply_keyboard = [['/end_play']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Сделайте ход''', reply_markup=markup)
@@ -196,10 +198,12 @@ def xo(update, context):
             table_xo(now_for_game[0])
             context.bot.send_photo(chat_id=update.message.chat_id, photo=open('data/im.png', 'rb'))
             update.message.reply_text(f'''Бот выиграл. Вы перенаправлены в меню.''')
+            remove('data/im.png')
         elif 's' in now:
             table_xo(now_for_game[0])
             context.bot.send_photo(chat_id=update.message.chat_id, photo=open('data/im.png', 'rb'))
             update.message.reply_text(f'''Ничья. Вы перенаправлены в меню.''')
+            remove('data/im.png')
         now = 'menu'
         now_for_game = ''
         return menu(update, context)
