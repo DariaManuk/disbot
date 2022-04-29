@@ -11,31 +11,42 @@ from os import remove
 # подключение к базе данных, определение "флагов"
 db_session.global_init("db/bot.db")
 db_sess = db_session.create_session()
-now = ''
-now_for_game = ''
+now = {}
+now_for_game = {}
+
+
+# проверка пользователя
+def check(update, context):
+    global now, now_for_game
+    if update.message.from_user.id not in now.keys():
+        now[update.message.from_user.id] = ''
+    if update.message.from_user.id not in now_for_game.keys():
+        now_for_game[update.message.from_user.id] = ''
 
 
 # функция для переадрессации на нужную
 def echo(update, context):
     global now
+    check(update, context)
     update.message.reply_text(f'Ответьте пожалуйста на сообщение.')
-    if now == 'start':
+    if now[update.message.from_user.id] == 'start':
         return start(update, context)
-    elif now == 'e_p':
+    elif now[update.message.from_user.id] == 'e_p':
         return end_play(update, context)
-    elif now == '':
+    elif now[update.message.from_user.id] == '':
         return stop(update, context)
-    elif now == 'menu':
+    elif now[update.message.from_user.id] == 'menu':
         return menu(update, context)
-    elif 'cities' in now:
+    elif 'cities' in now[update.message.from_user.id]:
         return cities(update, context)
-    elif 'rating' in now:
+    elif 'rating' in now[update.message.from_user.id]:
         return rating(update, context)
 
 
 # команда /start
 def start(update, context):
     global now, db_sess
+    check(update, context)
     # проверка, есть ли уже пользователь в базе данных
     a = [i.id_tg for i in db_sess.query(User).all()]
     if update.message.from_user.id not in a:
@@ -49,16 +60,16 @@ def start(update, context):
         db_sess.add(result)
         db_sess.commit()
     # когда бот ещё не активирован
-    if now == '':
+    if now[update.message.from_user.id] == '':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Я бот с играми. 
     Если хотите посмотреть меню нажмите - /menu 
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
-        now = 'start'
+        now[update.message.from_user.id] = 'start'
     # если бот уже включен, но коменд ещё не было
-    elif now == 'start':
+    elif now[update.message.from_user.id] == 'start':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Бот уже активирован 
@@ -74,16 +85,17 @@ def start(update, context):
 # команда выключения бота
 def stop(update, context):
     global now, now_for_game
+    check(update, context)
     # если бота можно выключить
-    if now != '':
+    if now[update.message.from_user.id] != '':
         reply_keyboard = [['/start']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(
             f'''Бот выключен. Спасибо за игру. 
     Чтобы заново активировать бота нажмите - /start''',
             reply_markup=markup)
-        now = ''
-        now_for_game = ''
+        now[update.message.from_user.id] = ''
+        now_for_game[update.message.from_user.id] = ''
     # если он уже выключен
     else:
         reply_keyboard = [['/start']]
@@ -97,18 +109,20 @@ def stop(update, context):
 # закончить игру
 def end_play(update, context):
     global now, now_for_game
+    check(update, context)
     # если игра активирована
-    if 'xo' in now or 'maze' in now or 'cities' in now:
+    if 'xo' in now[update.message.from_user.id] or 'maze' in now[
+        update.message.from_user.id] or 'cities' in now[update.message.from_user.id]:
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Игра досрочно завершена. Результаты не занесены в рейтинг. 
     Если хотите посмотреть меню нажмите - /menu 
     Если хотите остановить бота нажмите - /stop''',
                                   reply_markup=markup)
-        now = 'e_p'
-        now_for_game = ''
+        now[update.message.from_user.id] = 'e_p'
+        now_for_game[update.message.from_user.id] = ''
     # если игры закончены, но команд больше не было
-    elif now == 'e_p':
+    elif now[update.message.from_user.id] == 'e_p':
         reply_keyboard = [['/menu'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Игра уже завершена. 
@@ -124,8 +138,10 @@ def end_play(update, context):
 # меню
 def menu(update, context):
     global now
+    check(update, context)
     # если можно открыть меню
-    if now in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now:
+    if now[update.message.from_user.id] in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now[
+        update.message.from_user.id]:
         reply_keyboard = [['/cities', '/maze', '/xo'], ['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Выберите игру: 
@@ -136,7 +152,7 @@ def menu(update, context):
     Посмотреть рейтинг - /rating 
     Выключить бота - /stop ''',
                                   reply_markup=markup)
-        now = 'menu'
+        now[update.message.from_user.id] = 'menu'
     # если нельзя
     else:
         update.message.reply_text(f'''В данный момент нельзя открыть меню.''')
@@ -146,66 +162,68 @@ def menu(update, context):
 # игра крестики-нолики
 def xo(update, context):
     global now, now_for_game
+    check(update, context)
     # когда возможно запустить игру
-    if now in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now:
+    if now[update.message.from_user.id] in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now[
+        update.message.from_user.id]:
         reply_keyboard = [['o'], ['x'], ['нет']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''В этой игре вам нужно обыграть бота в крестики-нолики. 
-    Чтобы сделать ход пришлите 2 цыфры: первая - строчка, вторая - столбец. Пример:
+    Чтобы сделать ход пришлите 2 цифры через пробел: первая - строчка, вторая - столбец. Пример:
     1 1
     2 3
     и тд. 
     Если захотите досрочно окончить игру нажмите - /end_play
         Вы хотите начать игру? Если да, выберите свой знак.''', reply_markup=markup)
-        now = 'xo'
+        now[update.message.from_user.id] = 'xo'
     # ход игрока
-    elif now == 'xo 1':
-        table_xo(now_for_game[0])
+    elif now[update.message.from_user.id] == 'xo 1':
+        table_xo(now_for_game[update.message.from_user.id][0])
         context.bot.send_photo(chat_id=update.message.chat_id, photo=open('data/im.png', 'rb'))
         remove('data/im.png')
         reply_keyboard = [['/end_play']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Сделайте ход''', reply_markup=markup)
-        now = 'xo 1'
+        now[update.message.from_user.id] = 'xo 1'
     # ход бота
-    elif now == 'xo 2':
-        if now_for_game[1] == 2:
-            f = TicTacToeAI(now_for_game[0], 1)
+    elif now[update.message.from_user.id] == 'xo 2':
+        if now_for_game[update.message.from_user.id][1] == 2:
+            f = TicTacToeAI(now_for_game[update.message.from_user.id][0], 1)
             if f is None:
-                now = 'xo win n'
+                now[update.message.from_user.id] = 'xo win n'
                 return xo(update, context)
-            now_for_game[0][f[0]][f[1]] = 1
+            now_for_game[update.message.from_user.id][0][f[0]][f[1]] = 1
         else:
-            f = TicTacToeAI(now_for_game[0], 2)
+            f = TicTacToeAI(now_for_game[update.message.from_user.id][0], 2)
             if f is None:
-                now = 'xo win s'
+                now[update.message.from_user.id] = 'xo win s'
                 return xo(update, context)
-            now_for_game[0][f[0]][f[1]] = 2
-        if is_win(now_for_game[0]):
-            now = 'xo win b'
+            now_for_game[update.message.from_user.id][0][f[0]][f[1]] = 2
+        if is_win(now_for_game[update.message.from_user.id][0]):
+            now[update.message.from_user.id] = 'xo win b'
         else:
-            now = 'xo 1'
+            now[update.message.from_user.id] = 'xo 1'
         return xo(update, context)
     # обработка выигрыша и ничьи
-    elif 'xo win' in now:
-        if 'u' in now:
+    elif 'xo win' in now[update.message.from_user.id]:
+        if 'u' in now[update.message.from_user.id]:
             update.message.reply_text(f'''Поздравляю, вы выигарли! Вы перенаправлены в меню.''')
             user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
             db_sess.query(Results).filter(Results.user_id == user.id).update(
                 {'xo': Results.xo + 1, 'all': Results.all + 1})
             db_sess.commit()
-        elif 'b' in now:
-            table_xo(now_for_game[0])
+        elif 'b' in now[update.message.from_user.id]:
+            table_xo(now_for_game[update.message.from_user.id][0])
             context.bot.send_photo(chat_id=update.message.chat_id, photo=open('data/im.png', 'rb'))
             update.message.reply_text(f'''Бот выиграл. Вы перенаправлены в меню.''')
             remove('data/im.png')
-        elif 's' in now:
-            table_xo(now_for_game[0])
+        elif 's' in now[update.message.from_user.id]:
+            table_xo(now_for_game[update.message.from_user.id][0])
             context.bot.send_photo(chat_id=update.message.chat_id, photo=open('data/im.png', 'rb'))
             update.message.reply_text(f'''Ничья. Вы перенаправлены в меню.''')
             remove('data/im.png')
-        now = 'menu'
-        now_for_game = ''
+        now[update.message.from_user.id] = 'menu'
+        now_for_game[update.message.from_user.id] = ''
         return menu(update, context)
     # если игру нельзя сейчас включить
     else:
@@ -216,27 +234,30 @@ def xo(update, context):
 # игра в города
 def cities(update, context):
     global now, now_for_game
+    check(update, context)
     # когда возможно запустить игру
-    if now in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now:
+    if now[update.message.from_user.id] in ['menu', 'start', 'e_p', 'rating',
+                                            'cities'] or 'rating' in now[
+        update.message.from_user.id]:
         reply_keyboard = [['да'], ['нет']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''В этой игре вам нужно угадать город по фотографии со спутника. 
 Чтобы ответ засчитался, нужно вбивать название русскими буквами.
 Если захотите досрочно окончить игру нажмите - /end_play
     Вы хотите начать игру?''', reply_markup=markup)
-        now = 'cities'
+        now[update.message.from_user.id] = 'cities'
     # прислать пользователю изображение города со спутника
-    elif now == 'cities 1':
+    elif now[update.message.from_user.id] == 'cities 1':
         spisok = city()
         context.bot.send_photo(chat_id=update.message.chat_id, photo=spisok[0])
         reply_keyboard = [['/end_play']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Какой это город?''', reply_markup=markup)
-        now_for_game = spisok[1]
-        now = 'cities 2'
+        now_for_game[update.message.from_user.id] = spisok[1]
+        now[update.message.from_user.id] = 'cities 2'
     # проверка верности ответа
-    elif now == 'cities 2':
-        if update.message.text == now_for_game:
+    elif now[update.message.from_user.id] == 'cities 2':
+        if update.message.text == now_for_game[update.message.from_user.id]:
             reply_keyboard = [['/end_play']]
             markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
             update.message.reply_text(f'''Верно. Идём дальше.''', reply_markup=markup)
@@ -244,13 +265,13 @@ def cities(update, context):
             db_sess.query(Results).filter(Results.user_id == user.id).update(
                 {'cities': Results.cities + 1, 'all': Results.all + 1})
             db_sess.commit()
-            now = 'cities 1'
+            now[update.message.from_user.id] = 'cities 1'
             return cities(update, context)
         else:
             reply_keyboard = [['/end_play']]
             markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
             update.message.reply_text(f'''Неверно. Идём дальше.''', reply_markup=markup)
-            now = 'cities 1'
+            now[update.message.from_user.id] = 'cities 1'
             return cities(update, context)
     # если игру нельзя сейчас включить
     else:
@@ -260,13 +281,15 @@ def cities(update, context):
 
 # лабиринт
 def maze(update, context):
+    check(update, context)
     update.message.reply_text(f'''В данный момент лабиринт не доступен.''')
 
 
 # рейтинг
 def rating(update, context):
     global now, now_for_game
-    if now in ['start', 'menu', 'e_p', 'rating']:
+    check(update, context)
+    if now[update.message.from_user.id] in ['start', 'menu', 'e_p', 'rating']:
         reply_keyboard = [['maze', 'xo'], ['cities', 'all'], ['/menu']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(
@@ -277,11 +300,11 @@ def rating(update, context):
     общий - all
 Вернуться в меню - /menu''',
             reply_markup=markup)
-        now = 'rating'
+        now[update.message.from_user.id] = 'rating'
     # общий рейтинг
-    elif now == 'rating all':
+    elif now[update.message.from_user.id] == 'rating all':
         stroka = 'Общий рейтинг:\n'
-        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.all))[:5]:
+        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: -x.all))[:5]:
             stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.all}\n'
         stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
         user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
@@ -292,11 +315,11 @@ def rating(update, context):
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(stroka,
                                   reply_markup=markup)
-        now = 'rating'
+        now[update.message.from_user.id] = 'rating'
     # Рейтинг по игре крестики-нолики
-    elif now == 'rating xo':
+    elif now[update.message.from_user.id] == 'rating xo':
         stroka = 'Рейтинг по игре крестики-нолики:\n'
-        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.xo))[:5]:
+        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: -x.xo))[:5]:
             stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.xo}\n'
         stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
         user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
@@ -307,11 +330,11 @@ def rating(update, context):
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(stroka,
                                   reply_markup=markup)
-        now = 'rating'
+        now[update.message.from_user.id] = 'rating'
     # Рейтинг по лабиринту
-    elif now == 'rating maze':
+    elif now[update.message.from_user.id] == 'rating maze':
         stroka = 'Рейтинг по лабиринту:\n'
-        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.maze))[:5]:
+        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: -x.maze))[:5]:
             stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.maze}\n'
         stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
         user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
@@ -322,11 +345,11 @@ def rating(update, context):
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(stroka,
                                   reply_markup=markup)
-        now = 'rating'
+        now[update.message.from_user.id] = 'rating'
     # Рейтинг по игре города
-    elif now == 'rating cities':
+    elif now[update.message.from_user.id] == 'rating cities':
         stroka = 'Рейтинг по игре города:\n'
-        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: x.cities))[:5]:
+        for result in list(sorted(db_sess.query(Results).all(), key=lambda x: -x.cities))[:5]:
             stroka += f'    {db_sess.query(User).filter(User.id == result.user_id).first().username}\t{result.cities}\n'
         stroka += ' ' * 4 + '.' * 4 + '\n' + '-' * 10 + '\n'
         user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
@@ -337,7 +360,7 @@ def rating(update, context):
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(stroka,
                                   reply_markup=markup)
-        now = 'rating'
+        now[update.message.from_user.id] = 'rating'
     # если нельзя посмотреть сейчас рейтинг
     else:
         reply_keyboard = []
@@ -351,47 +374,50 @@ def rating(update, context):
 # обработка текстовых сообщений
 def text(update, context):
     global now, now_for_game
+    check(update, context)
+    text = update.message.text.lower()
     # обработка в игре города
-    if now == 'cities':
+    if now[update.message.from_user.id] == 'cities':
         # хочет ли пользователь начать игру
-        if 'yes' in update.message.text \
-                or 'ok' in update.message.text \
-                or 'yes' in update.message.text \
-                or 'да' in update.message.text \
-                or 'хорошо' in update.message.text:
-            now = 'cities 1'
+        if 'yes' in text \
+                or 'ok' in text \
+                or 'yes' in text \
+                or 'да' in text \
+                or 'хорошо' in text:
+            now[update.message.from_user.id] = 'cities 1'
             return cities(update, context)
-        elif 'не' in update.message.text \
-                or 'no' in update.message.text:
-            now = 'menu'
+        elif 'не' in text \
+                or 'no' in text:
+            now[update.message.from_user.id] = 'menu'
             return menu(update, context)
     # обработка в крестики-нолики
-    elif now == 'xo':
+    elif now[update.message.from_user.id] == 'xo':
         # хочет ли пользователь начать игру
-        if 'x' == update.message.text \
-                or 'o' == update.message.text:
-            now = 'xo 1'
+        if 'x' == text \
+                or 'o' == text:
+            now[update.message.from_user.id] = 'xo 1'
             b = 2
-            if update.message.text == 'o':
+            if text == 'o':
                 b = 1
-            now_for_game = [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], b]
+            now_for_game[update.message.from_user.id] = [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], b]
             return xo(update, context)
-        elif 'не' in update.message.text \
-                or 'no' in update.message.text:
-            now = 'menu'
+        elif 'не' in text \
+                or 'no' in text:
+            now[update.message.from_user.id] = 'menu'
             return menu(update, context)
     # правильно ли пользователь сделал ход
-    elif now == 'xo 1':
-        spisok = update.message.text.split()
+    elif now[update.message.from_user.id] == 'xo 1':
+        spisok = text.split()
         if len(spisok) == 2 and all(map(lambda x: x.isdigit(), spisok)):
             spisok = [int(i) for i in spisok]
             if 0 < spisok[0] < 4 and 0 < spisok[1] < 4:
-                if now_for_game[0][spisok[0] - 1][spisok[1] - 1] == 0:
-                    now_for_game[0][spisok[0] - 1][spisok[1] - 1] = now_for_game[1]
-                    if is_win(now_for_game[0]):
-                        now = 'xo win u'
+                if now_for_game[update.message.from_user.id][0][spisok[0] - 1][spisok[1] - 1] == 0:
+                    now_for_game[update.message.from_user.id][0][spisok[0] - 1][spisok[1] - 1] = \
+                    now_for_game[update.message.from_user.id][1]
+                    if is_win(now_for_game[update.message.from_user.id][0]):
+                        now[update.message.from_user.id] = 'xo win u'
                     else:
-                        now = 'xo 2'
+                        now[update.message.from_user.id] = 'xo 2'
                 else:
                     update.message.reply_text('Неверный ход.')
             else:
@@ -400,21 +426,21 @@ def text(update, context):
             update.message.reply_text('Неверный ход.')
         return xo(update, context)
     # обработка в рейтинг, какой конкретно показать
-    elif now == 'rating':
-        if 'maze' in update.message.text:
-            now = 'rating maze'
+    elif now[update.message.from_user.id] == 'rating':
+        if 'maze' in text:
+            now[update.message.from_user.id] = 'rating maze'
             return rating(update, context)
-        elif 'xo' in update.message.text:
-            now = 'rating xo'
+        elif 'xo' in text:
+            now[update.message.from_user.id] = 'rating xo'
             return rating(update, context)
-        elif 'all' in update.message.text:
-            now = 'rating all'
+        elif 'all' in text:
+            now[update.message.from_user.id] = 'rating all'
             return rating(update, context)
-        elif 'cities' in update.message.text:
-            now = 'rating cities'
+        elif 'cities' in text:
+            now[update.message.from_user.id] = 'rating cities'
             return rating(update, context)
     # обработка в игре города, проверка ответа
-    elif now in ['cities 1', 'cities 2']:
+    elif now[update.message.from_user.id] in ['cities 1', 'cities 2']:
         return cities(update, context)
     # если пользователь написал что-то не предусмотренное
     update.message.reply_text('Извините, я вас не понимаю.')
