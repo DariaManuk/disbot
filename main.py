@@ -143,7 +143,7 @@ def menu(update, context):
     # если можно открыть меню
     if now[update.message.from_user.id] in ['menu', 'start', 'e_p', 'rating'] or 'rating' in now[
         update.message.from_user.id]:
-        reply_keyboard = [['/cities', '/maze', '/xo'], ['/stop']]
+        reply_keyboard = [['/cities', '/maze', '/xo'], ['/rating'],['/stop']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
         update.message.reply_text(f'''Выберите игру: 
     города - /cities 
