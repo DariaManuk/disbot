@@ -7,11 +7,14 @@ from level_maps import *
 color_manager = Color()
 
 
+# Как сделать 3D Игру на Python с Нуля [ Pygame ]
+# https://www.youtube.com/watch?v=SmKBsArp2dI&t=768s
+# туториал по рай кастинг я его раз 7 смортел там всё очень првельно расказывается
 def ray_casting(player_pos, player_angle, map):
-    world_map = maps_real[f"level {map}"]["wall_map"]
+    world_map = maps_real[f"level {map}"]["wall_map"]  # смотрим на карту на которой назодится игрок
     wall_type_map = maps_real[f"level {map}"]["type_map"]
     fin_pos = maps_real[f"level {map}"]["fin_pos"]
-    new_image = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+    new_image = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0)) # создаём картинку которую потом можно отсылать
     draw = ImageDraw.Draw(new_image)
     cur_angle = player_angle - HALF_FOV
     xo, yo = player_pos
@@ -25,7 +28,7 @@ def ray_casting(player_pos, player_angle, map):
             x = xo + depth * cos_a
             y = yo + depth * sin_a
             # pygame.draw.line(sc, DARKGRAY, player_pos, (x, y), 2)
-            if (x // TILE * TILE, y // TILE * TILE) == fin_pos:
+            if (x // TILE * TILE, y // TILE * TILE) == fin_pos: # если финишь
                 depth *= math.cos(player_angle - cur_angle)
                 proj_height = min(PROJ_COEFF / (depth + 0.0001), HEIGHT)
                 color = (255, 255, 255)
@@ -35,11 +38,11 @@ def ray_casting(player_pos, player_angle, map):
                      (int(ray * SCALE + SCALE), int(HALF_HEIGHT - proj_height // 2 + proj_height))),
                     color)
                 break
-            elif (x // TILE * TILE, y // TILE * TILE) in world_map:
+            elif (x // TILE * TILE, y // TILE * TILE) in world_map: # просто стена
                 depth *= math.cos(player_angle - cur_angle)
                 proj_height = min(PROJ_COEFF / (depth + 0.0001), HEIGHT)
                 c = 255 / (1 + depth * depth * 0.0001)
-                num = wall_type_map[str((int(x // TILE * TILE), int(y // TILE * TILE)))]
+                num = wall_type_map[str((int(x // TILE * TILE), int(y // TILE * TILE)))] # смотрим какой цвет
                 color = color_manager.chek(num, c)
                 # print(ray * SCALE, HALF_HEIGHT - proj_height // 2, SCALE, proj_height)
                 draw.rectangle(
@@ -48,5 +51,5 @@ def ray_casting(player_pos, player_angle, map):
                     color)
                 break
         cur_angle += DELTA_ANGLE
-    new_image.save("data/maze/ray_casting_im.png")
+    new_image.save("data/maze/ray_casting_im.png") # сохраняем
     return False

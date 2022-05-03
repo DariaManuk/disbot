@@ -7,7 +7,7 @@ wall_type_map = dict()
 fin_pos = (0, 0)
 
 
-def map_layout(text_map):
+def map_layout(text_map): # создание карты из tile карты
     global fin_pos, world_map, wall_type_map
     world_map = set()
     wall_type_map = dict()

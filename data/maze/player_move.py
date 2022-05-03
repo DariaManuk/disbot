@@ -2,6 +2,7 @@ from settings import *
 from map_game import *
 
 
+# тут всё примерно одинаково мы смотрим можем ли мы идти в этом напровлении тут скоре всего можно было умнее но мне лень
 def move_forward(player_pos, player_angle, map):
     world_map = maps_real[f"level {map}"]["wall_map"]
     if player_angle == 0:
