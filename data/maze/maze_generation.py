@@ -177,6 +177,6 @@ def new_map():
         text_maze.append("")
         for j in range(width):
             text_maze[-1] += maze[i][j]
-    for i in text_maze:
-        print(i)
+    # for i in text_maze:
+    #     print(i)
     return text_maze

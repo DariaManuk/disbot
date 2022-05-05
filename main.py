@@ -554,7 +554,7 @@ def text(update, context):
 
 # запуск бота
 def main():
-    updater = Updater('5116714628:AAEoIs6Lfm6MwqxSNdB4usb6fMYL_GcOYAQ', use_context=True)
+    updater = Updater('5104954005:AAFW-n0oIGM7ZqHprL8B-O4szvpjMVhx6yo', use_context=True)
     dp = updater.dispatcher
     text_handler = MessageHandler(Filters.text, text)
     dp.add_handler(CommandHandler("start", start))
