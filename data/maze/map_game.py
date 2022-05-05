@@ -1,3 +1,5 @@
+import random
+from maze_generation import new_map
 from settings import *
 from level_maps import *
 
@@ -7,8 +9,8 @@ wall_type_map = dict()
 fin_pos = (0, 0)
 
 
-def map_layout(text_map): # создание карты из tile карты
-    global fin_pos, world_map, wall_type_map
+def map_layout(text_map):  # создание карты из tile карты
+    player_pos = [0, 0]
     world_map = set()
     wall_type_map = dict()
     for j, row in enumerate(text_map):
@@ -20,17 +22,13 @@ def map_layout(text_map): # создание карты из tile карты
                 fin_pos = (i * TILE, j * TILE)
             elif char != '.':
                 world_map.add((i * TILE, j * TILE))
-                wall_type_map[str((i * TILE, j * TILE))] = int(char)
-    return world_map, wall_type_map
+                wall_type_map[str((i * TILE, j * TILE))] = random.randint(1, 5)
+        text_map[j] = text_map[j].replace(".", "e")
+    return player_pos, fin_pos, world_map, wall_type_map, text_map
 
 
-def change_level(level_num):
-    global fin_pos, world_map, wall_type_map
-    if level_num == 0:
-        world_map, wall_type_map = map_layout(maps["default_map"])
-    else:
-        world_map, wall_type_map = map_layout(maps[f"level_{level_num}_map"])
-
+def change_level():
+    return map_layout(new_map())
 
 # map_layout(maps["level_4_map"])
 # print('"level 1": {', end="")

@@ -290,78 +290,75 @@ def maze(update, context):
     # когда возможно запустить игру
     if now[update.message.from_user.id] in ['menu', 'start', 'e_p', 'rating', 'maze'] or 'rating' in now[
         update.message.from_user.id]:
-        reply_keyboard = [['нет'], [str(i) for i in range(1, level_num + 1)]]
-        markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=False)
-        update.message.reply_text(f'''Если хотите начать игру выберите уровень.
+        markup = ReplyKeyboardMarkup(reply_keyboard_level, one_time_keyboard=False)
+        update.message.reply_text(f'''Играть?
     Если захотите окончить игру нажмите - /end_play
         Вы хотите начать игру?''', reply_markup=markup)  # выбор начального уровня
         now[update.message.from_user.id] = 'maze level'  # говорим что мы выьераем уровень
+
         now_for_game[update.message.from_user.id] = {"pos": [0, 0],
                                                      "angle": 0,
-                                                     "map": 1}
+                                                     "map": list(),
+                                                     "wall_type_map": dict(),
+                                                     "world_map": set(),
+                                                     "fin_pos": [0, 0]}
     # прислать пользователю изображение города со спутника
     elif now[update.message.from_user.id] == 'maze level':  # если выбор уровня
-        if update.message.text.isdigit():  # проверяем является ли сообщение номером
-            number_level = int(update.message.text)
-            if number_level > level_num or number_level < 1:  # проверяем находится ли выброный уровень реальным уровнем
-                update.message.reply_text(f'''выберите уровень то 1 до {level_num} просто написав номер уровня
-Если захотите окончить игру нажмите - /end_play''', reply_markup=markup_level)
-            else:
-                now[update.message.from_user.id] = 'maze play'  # обозначаем что мы играем
-                now_for_game[update.message.from_user.id]["map"] = number_level  # обновляем значения карты
-                now_for_game[update.message.from_user.id]["pos"] = [1150, 150]  # обновляем значения позиции
-                now_for_game[update.message.from_user.id]["angle"] = 0  # обновляем значения напровлениея
-                update.message.reply_text('уровень изменён')
-                ray_casting(now_for_game[update.message.from_user.id]["pos"],  # вызываем функцию ray casting
-                            ANGELES[now_for_game[update.message.from_user.id]["angle"]],
-                            now_for_game[update.message.from_user.id]["map"])
-                update.message.reply_text(
-                    f"pos:{now_for_game[update.message.from_user.id]['pos']}\
+
+        player_pos, fin_pos, world_map, wall_type_map, maze = change_level()
+        now_for_game[update.message.from_user.id]["map"] = maze  # обновляем значения карты
+        now_for_game[update.message.from_user.id]["pos"] = list(player_pos)  # обновляем значения позиции
+        now_for_game[update.message.from_user.id]["fin_pos"] = fin_pos
+        now_for_game[update.message.from_user.id]["world_map"] = world_map
+        now_for_game[update.message.from_user.id]["wall_type_map"] = wall_type_map
+        now_for_game[update.message.from_user.id]["angle"] = 0  # обновляем значения напровлениея
+        update.message.reply_text('уровень изменён')
+        ray_casting(now_for_game[update.message.from_user.id]["pos"],  # вызываем функцию ray casting
+                    ANGELES[now_for_game[update.message.from_user.id]["angle"]],
+                    now_for_game[update.message.from_user.id]["world_map"],
+                    now_for_game[update.message.from_user.id]["wall_type_map"],
+                    now_for_game[update.message.from_user.id]["fin_pos"])
+        update.message.reply_text(
+            f"pos:{now_for_game[update.message.from_user.id]['pos']}\
 angle:{now_for_game[update.message.from_user.id]['angle']}")  # пишем где песонаж
-                context.bot.send_photo(update.message.chat_id, photo=open('data/maze/ray_casting_im.png', 'rb'),
-                                       reply_markup=markup_walking)  # присылаем фото
-                remove('data/maze/ray_casting_im.png')  # удоляем фото
-        else:
-            update.message.reply_text(f'''выберите уровень то 1 до {level_num} просто написав номер уровня
-Если захотите окончить игру нажмите - /end_play''')  # если прислали билеберду говори что они не правы
+        context.bot.send_photo(update.message.chat_id, photo=open('data/maze/ray_casting_im.png', 'rb'),
+                               reply_markup=markup_walking)  # присылаем фото
+        remove('data/maze/ray_casting_im.png')  # удоляем фото
+        now[update.message.from_user.id] = 'maze play'  # обозначаем что мы играем
     elif now[update.message.from_user.id] == 'maze play':  # если мы играем
-        if update.message.text == "change_level":  # если игрок хочет сменить уровень
-            now[update.message.from_user.id] = 'maze level'
-            update.message.reply_text(
-                f"выберите уроввень с 1 по {level_num}", reply_markup=markup_level)
-            return
         pos, angle = text_to_command_maze(update.message.text, now_for_game[update.message.from_user.id]["pos"],
                                           now_for_game[update.message.from_user.id]["angle"],
                                           now_for_game[update.message.from_user.id][
-                                              "map"])  # смотрим прислал ли он команду движения
-        if pos is not None and angle is not None: # если да
+                                              "world_map"])  # смотрим прислал ли он команду движения
+        if pos is not None and angle is not None:  # если да
             now_for_game[update.message.from_user.id]["pos"], now_for_game[update.message.from_user.id][
                 "angle"] = pos, angle
             update.message.reply_text(
                 f"pos:{now_for_game[update.message.from_user.id]['pos']}\
-angle:{now_for_game[update.message.from_user.id]['angle'] * 90}")
-            did_we_win = ray_casting(now_for_game[update.message.from_user.id]["pos"], ANGELES[
-                now_for_game[update.message.from_user.id]["angle"]], now_for_game[update.message.from_user.id]["map"])
+    angle:{now_for_game[update.message.from_user.id]['angle'] * 90}")
+            did_we_win = ray_casting(now_for_game[update.message.from_user.id]["pos"],  # вызываем функцию ray casting
+                                     ANGELES[now_for_game[update.message.from_user.id]["angle"]],
+                                     now_for_game[update.message.from_user.id]["world_map"],
+                                     now_for_game[update.message.from_user.id]["wall_type_map"],
+                                     now_for_game[update.message.from_user.id]["fin_pos"])
             # проверяем выиграли мы. функция рай састинг возвращает True если да
             if did_we_win:
                 user = db_sess.query(User).filter(User.id_tg == update.message.from_user.id).first()
                 db_sess.query(Results).filter(Results.user_id == user.id).update(
-                    {'maze': Results.maze + 1, 'all': Results.all + 1}) # сохраняем райтинг
+                    {'maze': Results.maze + 1, 'all': Results.all + 1})  # сохраняем райтинг
                 db_sess.commit()
-                update.message.reply_text(
-                    f"Крутой. Ты закончил уровень {now_for_game[update.message.from_user.id]['map']}",
-                    reply_markup=markup_level) # говори что он красава
-                now[update.message.from_user.id] = 'maze level' # выбераем следующий уровнь
-                update.message.reply_text(
-                    f"выберите уроввень с 1 по {level_num}", reply_markup=markup_level)
+                update.message.reply_text(f"Крутой. Ты закончил уровень.",
+                                          reply_markup=markup_level)  # говори что он красава
+                now[update.message.from_user.id] = 'maze won'  # выбераем следующий уровнь
                 return
             context.bot.send_photo(update.message.chat_id, photo=open('data/maze/ray_casting_im.png', 'rb'),
                                    reply_markup=markup_walking)
             remove('data/maze/ray_casting_im.png')
         else:
             update.message.reply_text(
-                f"Испоьзуй команды. Если захотите окончить игру нажмите - /end_play", # опять же говорим что он не прав
+                f"Испоьзуй команды. Если захотите окончить игру нажмите - /end_play",  # опять же говорим что он не прав
                 reply_markup=markup_walking)
+
     else:
         update.message.reply_text(f'''В данный момент нельзя начать играть в лабиринт.  ༼ つ ◕_◕ ༽つ''')
         return echo(update, context)
@@ -509,6 +506,18 @@ def text(update, context):
         return xo(update, context)
     # обработка в рейтинг, какой конкретно показать
     elif now[update.message.from_user.id] == 'maze':
+        if 'yes' in text \
+                or 'ok' in text \
+                or 'yes' in text \
+                or 'да' in text \
+                or 'хорошо' in text:
+            now[update.message.from_user.id] = 'maze level'
+            return maze(update, context)
+        elif 'не' in text \
+                or 'no' in text:
+            now[update.message.from_user.id] = 'menu'
+            return menu(update, context)
+    elif now[update.message.from_user.id] == 'maze won':
         if 'yes' in text \
                 or 'ok' in text \
                 or 'yes' in text \

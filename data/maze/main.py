@@ -1,5 +1,5 @@
 from telegram import ReplyKeyboardMarkup
-
+from maze_generation import new_map
 from map_game import change_level
 from level_maps import level_num
 from player_move import *
@@ -9,8 +9,8 @@ from ray_casting import ray_casting
 reply_keyboard_walking = [['w'],
                           ['a', 's', 'd'],
                           ['l', 'r'],
-                          ['change_level']]
-reply_keyboard_level = [[str(i) for i in range(1, level_num + 1)]]
+                          ['/end_play']]
+reply_keyboard_level = [['да', 'нет']]
 # print(reply_keyboard_level)
 markup_walking = ReplyKeyboardMarkup(reply_keyboard_walking, one_time_keyboard=False)
 markup_level = ReplyKeyboardMarkup(reply_keyboard_level, one_time_keyboard=True)
@@ -32,15 +32,15 @@ def new_level(update, context):
 
 
 # прверка команд и возвращаем позицию и напровлени
-def text_to_command_maze(text, player_pos, player_angle, map):
+def text_to_command_maze(text, player_pos, player_angle, world_map):
     if text == "w":  # вперед
-        return move_forward(player_pos, player_angle, map)
+        return move_forward(player_pos, player_angle, world_map)
     elif text == "s":  # назад
-        return move_back(player_pos, player_angle, map)
+        return move_back(player_pos, player_angle, world_map)
     elif text == "d":  # вправо
-        return move_right(player_pos, player_angle, map)
+        return move_right(player_pos, player_angle, world_map)
     elif text == "a":  # влево
-        return move_left(player_pos, player_angle, map)
+        return move_left(player_pos, player_angle, world_map)
     elif text == "l":  # поворот в лево
         player_angle -= 1
         player_angle %= 4

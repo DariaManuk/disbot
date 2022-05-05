@@ -10,10 +10,7 @@ color_manager = Color()
 # Как сделать 3D Игру на Python с Нуля [ Pygame ]
 # https://www.youtube.com/watch?v=SmKBsArp2dI&t=768s
 # туториал по рай кастинг я его раз 7 смортел там всё очень првельно расказывается
-def ray_casting(player_pos, player_angle, map):
-    world_map = maps_real[f"level {map}"]["wall_map"]  # смотрим на карту на которой назодится игрок
-    wall_type_map = maps_real[f"level {map}"]["type_map"]
-    fin_pos = maps_real[f"level {map}"]["fin_pos"]
+def ray_casting(player_pos, player_angle, world_map, wall_type_map, fin_pos):
     new_image = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0)) # создаём картинку которую потом можно отсылать
     draw = ImageDraw.Draw(new_image)
     cur_angle = player_angle - HALF_FOV
