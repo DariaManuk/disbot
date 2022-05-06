@@ -1,8 +1,8 @@
 from PIL import Image, ImageDraw
 
-from color import Color
-from settings import *
-from level_maps import *
+from data.color import Color
+from data.settings import *
+from data.level_maps import *
 
 color_manager = Color()
 
