@@ -1,5 +1,5 @@
-from settings import *
-from map_game import *
+from data.settings import *
+from data.map_game import *
 
 
 # тут всё примерно одинаково мы смотрим можем ли мы идти в этом напровлении тут скоре всего можно было умнее но мне лень
