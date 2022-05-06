@@ -5,10 +5,9 @@ from data import db_session
 from data.users import User
 from data.results import Results
 from data.cities import city
-from data.maze.main import *
+from data.main import *
 from data.xo import table_xo, TicTacToeAI, is_win
 from os import remove
-
 # подключение к базе данных, определение "флагов"
 db_session.global_init("db/bot.db")
 db_sess = db_session.create_session()
@@ -321,9 +320,9 @@ def maze(update, context):
         update.message.reply_text(
             f"pos:{now_for_game[update.message.from_user.id]['pos']}\
 angle:{now_for_game[update.message.from_user.id]['angle']}")  # пишем где песонаж
-        context.bot.send_photo(update.message.chat_id, photo=open('data/maze/ray_casting_im.png', 'rb'),
+        context.bot.send_photo(update.message.chat_id, photo=open('data/ray_casting_im.png', 'rb'),
                                reply_markup=markup_walking)  # присылаем фото
-        remove('data/maze/ray_casting_im.png')  # удоляем фото
+        remove('data/ray_casting_im.png')  # удоляем фото
         now[update.message.from_user.id] = 'maze play'  # обозначаем что мы играем
     elif now[update.message.from_user.id] == 'maze play':  # если мы играем
         pos, angle = text_to_command_maze(update.message.text, now_for_game[update.message.from_user.id]["pos"],
@@ -351,9 +350,9 @@ angle:{now_for_game[update.message.from_user.id]['angle']}")  # пишем гд�
                                           reply_markup=markup_level)  # говори что он красава
                 now[update.message.from_user.id] = 'maze won'  # выбераем следующий уровнь
                 return
-            context.bot.send_photo(update.message.chat_id, photo=open('data/maze/ray_casting_im.png', 'rb'),
+            context.bot.send_photo(update.message.chat_id, photo=open('data/ray_casting_im.png', 'rb'),
                                    reply_markup=markup_walking)
-            remove('data/maze/ray_casting_im.png')
+            remove('data/ray_casting_im.png')
         else:
             update.message.reply_text(
                 f"Испоьзуй команды. Если захотите окончить игру нажмите - /end_play",  # опять же говорим что он не прав
@@ -554,7 +553,7 @@ def text(update, context):
 
 # запуск бота
 def main():
-    updater = Updater('5104954005:AAFW-n0oIGM7ZqHprL8B-O4szvpjMVhx6yo', use_context=True)
+    updater = Updater('5116714628:AAEoIs6Lfm6MwqxSNdB4usb6fMYL_GcOYAQ', use_context=True)
     dp = updater.dispatcher
     text_handler = MessageHandler(Filters.text, text)
     dp.add_handler(CommandHandler("start", start))
