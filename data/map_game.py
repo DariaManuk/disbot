@@ -1,7 +1,7 @@
 import random
-from maze_generation import new_map
-from settings import *
-from level_maps import *
+from data.maze_generation import new_map
+from data.settings import *
+from data.level_maps import *
 
 world_map = set()
 wall_type_map = dict()
