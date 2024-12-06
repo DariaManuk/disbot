@@ -1,8 +1,8 @@
 from PIL import Image, ImageDraw
 
-from color import Color
-from settings import *
-from level_maps import *
+from data.color import Color
+from data.settings import *
+from data.level_maps import *
 
 color_manager = Color()
 
@@ -48,5 +48,5 @@ def ray_casting(player_pos, player_angle, world_map, wall_type_map, fin_pos):
                     color)
                 break
         cur_angle += DELTA_ANGLE
-    new_image.save("data/maze/ray_casting_im.png") # сохраняем
+    new_image.save("data/ray_casting_im.png") # сохраняем
     return False

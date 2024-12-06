@@ -1,9 +1,9 @@
 from telegram import ReplyKeyboardMarkup
-from maze_generation import new_map
-from map_game import change_level
-from level_maps import level_num
-from player_move import *
-from ray_casting import ray_casting
+from data.maze_generation import new_map
+from data.map_game import change_level
+from data.level_maps import level_num
+from data.player_move import *
+from data.ray_casting import ray_casting
 
 # TOKEN = '5116714628:AAEoIs6Lfm6MwqxSNdB4usb6fMYL_GcOYAQ'
 reply_keyboard_walking = [['w'],
